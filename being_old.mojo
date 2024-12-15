@@ -10,7 +10,8 @@ from being_components import (
 
 @value
 struct BeingComponents:
-    # TODO: Use metaprogramming to hand in these types and make these lists
+    # TODO: Use metaprogramming to hand in these types and make these lists,
+    #     like the attempt in being_new.mojo
     var plate_mail_pieces: List[PlateMailPiece]
     var shields: List[Shield]
     var swords: List[Sword]
@@ -23,7 +24,8 @@ struct BeingComponents:
         self.strength_rings = List[StrengthRing]()
 
     # Runs given function for every component that conforms to Armor.
-    # TODO: Use metaprogramming to combine this and each_attack_contributor
+    # TODO: Use metaprogramming to combine this and each_attack_contributor,
+    #     like the attempt in being_new.mojo
     fn each_armor[
         func: fn[A: Armor] (a: Pointer[A, _]) capturing -> None
     ](self):
