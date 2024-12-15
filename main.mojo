@@ -1,24 +1,5 @@
-# TODO:
-# - Added (CollectionElement), then lucky I knew to add @value to satisfy those errors
-# - for i, entry in list: doesn't work. even adding enumerate didnt either?
-# - when I tried to make Terrain's init take a fn, like this:
-#   fn __init__[
-#       make_tile: fn (row_i: Int, col_i: Int) capturing -> Tile
-#   ](inout self, num_rows: Int, num_cols: Int):
-#   I couldn't use it:
-#   ...: error: 'Terrain' expects 0 parameters, but 1 was specified
-#   terrain = Terrain[make_tile](80, 18)
-#   Had to make it an argument, and "escaping".
-# - Why did I have to import Dict but not List?
-# - Would have been nice to have something derive eq, ne, hash for me
-# - fn __getitem__(self, loc: Loc) raises -> ref [self.tiles] Tile:
-#   didn't work:
-#   error: cannot use a dynamic value in lifetime specifier
-#       fn __getitem__(self, loc: Loc) raises -> ref [self.tiles] Tile:
-#                                                     ~~~~^~~~~~
-
-
 from collections import Dict, KeyElement
+from gen_list import GenList, GenId
 
 @value
 struct Being(CollectionElement):
@@ -31,6 +12,9 @@ struct Being(CollectionElement):
     fn calculate_attack_power(self) -> Int:
         return self.strength
 
+    # These are immutable, and we return a new instance,
+    # so we could probably assume whatever we want about
+    # their groups.
     fn calculate_attack_cost(self, other: Being) -> Int:
         return 200 + max(0, self.strength - other.armor)
 
@@ -41,49 +25,22 @@ struct Being(CollectionElement):
         return self.armor
 
 
-@value
-struct GenId[T: AnyType]:
-    var index: Int
-    # Never zero.
-    var gen: Int
+# Using Nick's proposal, would be something like:
+# fn attack_new[g: Group](
+#     inout a: ref[g] Being,
+#     inout d: ref[g] Being
+# ) raises:
+fn attack_new(
+    inout a: Being,
+    inout d: Being
+) raises:
+    d.energy -= d.calculate_defend_cost(a)
+    d.hp -= a.calculate_attack_power() - d.calculate_defense()
+    a.energy -= a.calculate_attack_cost(d)
 
 
-@value
-struct GenListEntry[T: CollectionElement](CollectionElement):
-    var gen: Int
-    var value: T
-
-
-struct GenList[T: CollectionElement]:
-    var list: List[GenListEntry[T]]
-
-    fn __init__(inout self):
-        self.list = List[GenListEntry[T]]()
-
-    fn __getitem__(self, ind: GenId[T]) raises -> T:
-        entry_ref = self.list[ind.index]
-        if entry_ref.gen != ind.gen:
-            raise "wat"
-        return entry_ref.value
-
-    fn insert(inout self, owned value: T) -> GenId[T]:
-        # TODO(optimize): Keep a free-list of vacant indices, instead
-        # of searching through it like this.
-        list_end = len(self.list)
-        for i in range(0, list_end):
-            entry = self.list[i]
-            if entry.gen < 0:
-                entry.gen = -entry.gen + 1
-                entry.value = value^
-                return GenId[T](i, entry.gen)
-        # If we get here, there were no empty entries, so let's add one.
-        new_entry_gen = 1
-        self.list.append(GenListEntry[T](new_entry_gen, value^))
-        return GenId[T](list_end, new_entry_gen)
-
-
-
-fn attack(
+# Like above, but using conservative Rust-style borrowing.
+fn attack_old(
     inout beings: GenList[Being],
     attacker_id: GenId[Being],
     defender_id: GenId[Being],
@@ -102,13 +59,6 @@ fn attack(
     var a_mut = beings[attacker_id]
     a_mut.energy -= a_energy_cost
 
-fn attack_new(
-    inout a: Being,
-    inout d: Being,
-) raises:
-  d.energy -= d.calculate_defend_cost(a)
-  d.hp -= a.calculate_attack_power() - d.calculate_defense()
-  a.energy -= a.calculate_attack_cost(d)
 
 
 @value
@@ -200,7 +150,7 @@ fn main() raises:
     enemy_id = beings.insert(Being("g", 10, 0, 0, 3))
     loc_to_being_map[Loc(15, 15)] = enemy_id
 
-    attack(beings, player_id, enemy_id)
+    attack_old(beings, player_id, enemy_id)
 
     # attack_new(beings[player_id], beings[enemy_id])
     # TODO: This doesn't illustrate what we think it does, because
