@@ -27,9 +27,9 @@ struct Being(CollectionElement):
 
 
 # Using Nick's proposal, would be something like:
-# fn attack_new[g: Group](
-#     inout a: ref[g] Being,
-#     inout d: ref[g] Being
+# fn attack_new[g: MutableGroup](
+#     a: ref[g] Being,
+#     d: ref[g] Being
 # ) raises:
 fn attack_new(
     inout a: Being,
