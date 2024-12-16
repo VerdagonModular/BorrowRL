@@ -26,23 +26,7 @@ struct Being(CollectionElement):
         return self.armor
 
 
-# Using Nick's proposal, would be something like:
-# fn attack_new[g: MutableGroup](
-#     a: ref[g] Being,
-#     d: ref[g] Being
-# ) raises:
-fn attack_new(
-    inout a: Being,
-    inout d: Being
-) raises:
-    # This body would be this, in Nicks proposal
-    d.energy -= d.calculate_defend_cost(a)
-    d.hp -= a.calculate_attack_power() - d.calculate_defense()
-    a.energy -= a.calculate_attack_cost(d)
-
-
-# Like above, but using conservative Rust-style borrowing.
-fn attack_old(
+fn attack(
     inout beings: GenList[Being],
     attacker_id: GenId[Being],
     defender_id: GenId[Being],
@@ -60,6 +44,16 @@ fn attack_old(
 
     var a_mut = beings[attacker_id]
     a_mut.energy -= a_energy_cost
+
+# Using Nick's proposal, the above would just be:
+#
+# fn attack[g: MutableGroup](
+#     a: ref[g] Being,
+#     d: ref[g] Being
+# ) raises:
+#    d.energy -= d.calculate_defend_cost(a)
+#    d.hp -= a.calculate_attack_power() - d.calculate_defense()
+#    a.energy -= a.calculate_attack_cost(d)
 
 
 fn display(
@@ -108,13 +102,8 @@ fn main() raises:
     enemy_id = beings.insert(Being("g", 10, 0, 0, 3))
     loc_to_being_map[Loc(15, 15)] = enemy_id
 
-    attack_old(beings, player_id, enemy_id)
-
-    # attack_new(beings[player_id], beings[enemy_id])
-    # TODO: This doesn't illustrate what we think it does, because
-    # these are just copies, lol. Change __getitem__ to return a ref!
-    var b_1: Being = beings[player_id]
-    var b_2: Being = beings[enemy_id]
-    attack_new(b_1, b_2)
+    attack(beings, player_id, enemy_id)
+    # With nicks proposal, this would just be:
+    # attack(beings[player_id], beings[enemy_id])
 
     display(terrain, beings, loc_to_being_map)
