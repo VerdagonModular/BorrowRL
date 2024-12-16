@@ -31,11 +31,11 @@ struct Being(CollectionElement):
 #     a: ref[g] Being,
 #     d: ref[g] Being
 # ) raises:
-# This below code compiles, but isn't using Mojo's borrowing system yet.
 fn attack_new(
     inout a: Being,
     inout d: Being
 ) raises:
+    # This body would be this, in Nicks proposal
     d.energy -= d.calculate_defend_cost(a)
     d.hp -= a.calculate_attack_power() - d.calculate_defense()
     a.energy -= a.calculate_attack_cost(d)
