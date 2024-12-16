@@ -31,6 +31,7 @@ struct Being(CollectionElement):
 #     a: ref[g] Being,
 #     d: ref[g] Being
 # ) raises:
+# This below code compiles, but isn't using Mojo's borrowing system yet.
 fn attack_new(
     inout a: Being,
     inout d: Being
